@@ -1,0 +1,198 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: API specification
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: translation
+    description: Vernacular classroom translation operations
+  - name: speech
+    description: Bhashini speech operations
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+  /translation/explain:
+    post:
+      operationId: createPedagogicalExplanation
+      tags: [translation]
+      summary: Create a simple vernacular classroom explanation
+      description: Uses Gemini to adapt a classroom concept for elementary learners in a selected Indian regional language.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PedagogicalExplanationInput"
+      responses:
+        "200":
+          description: Generated explanation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PedagogicalExplanation"
+        "400":
+          description: Invalid request
+        "502":
+          description: Upstream AI service error
+  /speech/transcribe:
+    post:
+      operationId: transcribeSpeech
+      tags: [speech]
+      summary: Transcribe recorded classroom audio
+      description: Sends base64-encoded WAV audio to Bhashini automatic speech recognition.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpeechTranscriptionInput"
+      responses:
+        "200":
+          description: Transcribed speech
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpeechTranscription"
+        "400":
+          description: Invalid request
+        "502":
+          description: Upstream speech service error
+  /speech/synthesize:
+    post:
+      operationId: synthesizeSpeech
+      tags: [speech]
+      summary: Synthesize Marathi audio
+      description: Sends an explanation to Bhashini text-to-speech and returns a playable WAV data URL.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SpeechSynthesisInput"
+      responses:
+        "200":
+          description: Synthesized WAV audio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpeechSynthesis"
+        "400":
+          description: Invalid request
+        "502":
+          description: Upstream speech service error
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+    PedagogicalExplanationInput:
+      type: object
+      properties:
+        inputText:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        dialect:
+          type: string
+          enum:
+            - Assamese (অসমীয়া)
+            - Bengali (বাংলা)
+            - Bodo (बड़ो)
+            - Dogri (डोगरी)
+            - Gujarati (ગુજરાતી)
+            - Hindi (हिन्दी)
+            - Kannada (ಕನ್ನಡ)
+            - Kashmiri (कॉशुर)
+            - Konkani (कोंकणी)
+            - Maithili (मैथिली)
+            - Malayalam (മലയാളം)
+            - Manipuri (মৈতৈলোন্)
+            - Marathi (मराठी)
+            - Nepali (नेपाली)
+            - Odia (ଓଡ଼ିଆ)
+            - Punjabi (ਪੰਜਾਬੀ)
+            - Sanskrit (संस्कृत)
+            - Santali (सাঁওতালি)
+            - Sindhi (سنڌي)
+            - Tamil (தமிழ்)
+            - Telugu (తెలుగు)
+            - Urdu (اردو)
+      required:
+        - inputText
+        - dialect
+    PedagogicalExplanation:
+      type: object
+      properties:
+        explanation:
+          type: string
+        dialect:
+          type: string
+        sourceText:
+          type: string
+      required:
+        - explanation
+        - dialect
+        - sourceText
+    SpeechTranscriptionInput:
+      type: object
+      properties:
+        audioContent:
+          type: string
+          minLength: 1
+          description: Base64-encoded WAV audio without a data URL prefix.
+        sourceLanguage:
+          type: string
+          default: mr
+          enum: [as, bn, brx, doi, gu, hi, kn, ks, kok, mai, ml, mni, mr, ne, od, pa, sa, sat, sd, ta, te, ur]
+      required:
+        - audioContent
+    SpeechTranscription:
+      type: object
+      properties:
+        text:
+          type: string
+      required:
+        - text
+    SpeechSynthesisInput:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 12000
+        targetLanguage:
+          type: string
+          default: mr
+          enum: [as, bn, brx, doi, gu, hi, kn, ks, kok, mai, ml, mni, mr, ne, od, pa, sa, sat, sd, ta, te, ur]
+      required:
+        - text
+    SpeechSynthesis:
+      type: object
+      properties:
+        audioDataUrl:
+          type: string
+          description: Data URL containing the synthesized WAV audio.
+      required:
+        - audioDataUrl
+
